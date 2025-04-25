@@ -1,60 +1,35 @@
-# Hikkafrom telethon import events
-from telethon.tl.types import Message
+from .. import loader, utils
 import re
 
-class CalculatorModule:
-    """Модуль калькулятора для Hikka Userbot"""
+@loader.tds
+class CalculatorMod(loader.Module):
+    """Калькулятор для Hikka Userbot"""
+    strings = {"name": "Calculator"}
 
-    def __init__(self, client):
+    async def client_ready(self, client, db):
         self.client = client
-        self.name = "Calculator"
-        self.version = "1.0"
-        self.author = "Your Name"
-        self.description = "Простой калькулятор для вычисления выражений"
+        self.db = db
 
-    async def calculate(self, expr: str) -> float:
-        """Вычисляет математическое выражение"""
-        try:
-            # Убираем все пробелы и проверяем на безопасность
-            expr = expr.replace(" ", "")
-            if not re.match(r'^[\d+\-*/(). ]+$', expr):
-                return "❌ Ошибка: Недопустимые символы"
-            
-            # Вычисляем выражение
-            result = eval(expr)  # Осторожно! В реальном боте лучше использовать safer_eval
-            return f"🔢 Результат: {result}"
-        except ZeroDivisionError:
-            return "❌ Ошибка: Деление на ноль"
-        except SyntaxError:
-            return "❌ Ошибка: Неправильное выражение"
-        except Exception as e:
-            return f"❌ Ошибка: {str(e)}"
-
-    async def cmd_calc(self, event: Message):
-        """Вычисляет математическое выражение"""
-        args = event.raw_text.split(maxsplit=1)
-        if len(args) < 2:
-            await event.edit("**❌ Используйте:** `.calc <выражение>`\n**Пример:** `.calc 2+2*3`")
+    @loader.command()
+    async def calc(self, message):
+        """<выражение> - Вычислить математическое выражение"""
+        args = utils.get_args_raw(message)
+        if not args:
+            await message.edit("<b>❌ Введите выражение для вычисления</b>")
             return
         
-        expr = args[1]
-        result = await self.calculate(expr)
-        await event.edit(result)
+        # Безопасная проверка выражения
+        if not re.match(r'^[\d+\-*/(). ]+$', args):
+            await message.edit("<b>❌ Недопустимые символы в выражении</b>")
+            return
 
-    async def install(self):
-        """Вызывается при установке модуля"""
-        await self.client.send_message(
-            "me",
-            "✅ **Модуль Calculator успешно установлен!**\n"
-            "Используйте `.calc <выражение>` для вычислений."
-        )
+        try:
+            result = eval(args)
+            await message.edit(f"<b>🔢 Результат:</b> <code>{result}</code>")
+        except ZeroDivisionError:
+            await message.edit("<b>❌ Ошибка: Деление на ноль</b>")
+        except Exception as e:
+            await message.edit(f"<b>❌ Ошибка:</b> <code>{str(e)}</code>")
 
-async def setup(client):
-    """Установка модуля"""
-    module = CalculatorModule(client)
-    client.add_event_handler(
-        module.cmd_calc,
-        events.NewMessage(pattern=r"^\.calc\s+.+")
-    )
-    await module.install()
-    return module
+async def register(client):
+    return CalculatorMod(client)
