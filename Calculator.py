@@ -3,7 +3,7 @@ import re
 
 @loader.tds
 class CalculatorMod(loader.Module):
-    """Калькулятор для Hikka Userbot"""
+    """Калькулятор для Hikka"""
     strings = {"name": "Calculator"}
 
     async def client_ready(self, client, db):
@@ -12,24 +12,25 @@ class CalculatorMod(loader.Module):
 
     @loader.command()
     async def calc(self, message):
-        """<выражение> - Вычислить математическое выражение"""
+        """<выражение> - Вычислить пример"""
         args = utils.get_args_raw(message)
-        if not args:
-            await message.edit("<b>❌ Введите выражение для вычисления</b>")
-            return
         
-        # Безопасная проверка выражения
+        if not args:
+            await message.edit("❌ Введите выражение (например: <code>.calc 2+2</code>)")
+            return
+
+        # Безопасная проверка ввода
         if not re.match(r'^[\d+\-*/(). ]+$', args):
-            await message.edit("<b>❌ Недопустимые символы в выражении</b>")
+            await message.edit("❌ Недопустимые символы в выражении!")
             return
 
         try:
             result = eval(args)
-            await message.edit(f"<b>🔢 Результат:</b> <code>{result}</code>")
+            await message.edit(f"🔢 Результат: <code>{result}</code>")
         except ZeroDivisionError:
-            await message.edit("<b>❌ Ошибка: Деление на ноль</b>")
+            await message.edit("❌ Ошибка: Деление на ноль")
         except Exception as e:
-            await message.edit(f"<b>❌ Ошибка:</b> <code>{str(e)}</code>")
+            await message.edit(f"❌ Ошибка: {str(e)}")
 
 async def register(client):
-    return CalculatorMod(client)
+    return CalculatorMod(client)     
